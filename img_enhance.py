@@ -1,12 +1,39 @@
-import os
-import shutil
 import cv2
 import numpy as np
+import os
+
+def img_process(img, img_class, img_num, class_dir_path, id):
+    '''
+    图像处理的主程序
+    '''
+    if id == 0:
+        processed_img = contrast_brightness_image(img, 1.2, 10)
+    elif id == 1:
+        processed_img = gasuss_noise(img)
+    elif id == 2:
+        processed_img = mirror(img)
+    elif id == 3:
+        processed_img = resize(img)
+    elif id == 4:
+        processed_img = rotate(img)
+    elif id == 5:
+        processed_img = shear(img)
+    else:
+        #1.图像锐化
+        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], np.float32) #定义一个核
+        #采用核边缘锐化，增强目标物体的边缘及色彩特征信息
+        dst = cv2.filter2D(img, -1, kernel=kernel) 
+        # cv2.imshow("img_filter2D", dst)
+        #2.图像翻转
+        processed_img = cv2.flip(dst, 0)
+    #3.图片保存
+    cv2.imwrite(class_dir_path + "//" + img_class + str(img_num) + ".jpg", processed_img)
+
 '''opencv数据增强
     对图片进行色彩增强、高斯噪声、水平镜像、放大、旋转、剪切
 '''
 
-def contrast_brightness_image(src1, a, g, path_out):
+def contrast_brightness_image(src1, a, g):
     '''
         色彩增强（通过调节对比度和亮度）
     '''
@@ -15,10 +42,10 @@ def contrast_brightness_image(src1, a, g, path_out):
     src2 = np.zeros([h, w, ch], src1.dtype)
     # addWeighted函数说明:计算两个图像阵列的加权和
     dst = cv2.addWeighted(src1, a, src2, 1 - a, g)
-    cv2.imwrite(path_out, dst)
+    return dst
 
 
-def gasuss_noise(image, path_out_gasuss, mean=0, var=0.001):
+def gasuss_noise(image, mean=0, var=0.001):
     '''
         添加高斯噪声
         mean : 均值
@@ -33,85 +60,108 @@ def gasuss_noise(image, path_out_gasuss, mean=0, var=0.001):
         low_clip = 0.
     out = np.clip(out, low_clip, 1.0)
     out = np.uint8(out * 255)
-    cv2.imwrite(path_out_gasuss, out)
+    return out
 
 
-def mirror(image, path_out_mirror):
+def mirror(image):
     '''
         水平镜像
     '''
     h_flip = cv2.flip(image, 1)
-    cv2.imwrite(path_out_mirror, h_flip)
+    return h_flip
 
 
-def resize(image, path_out_large):
+def resize(image):
     '''
         放大两倍
     '''
     height, width = image.shape[:2]
     large = cv2.resize(image, (2 * width, 2 * height))
-    cv2.imwrite(path_out_large, large)
+    return large
 
 
-def rotate(image, path_out_rotate):
+def rotate(image):
     '''
         旋转
     '''
     rows, cols = image.shape[:2]
     M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 10, 1)
     dst = cv2.warpAffine(image, M, (cols, rows))
-    cv2.imwrite(path_out_rotate, dst)
+    return dst
 
 
-def shear(image, path_out_shear):
+def shear(image):
     '''
         剪切
     '''
     height, width = image.shape[:2]
     cropped = image[int(height / 9):height, int(width / 9):width]
-    cv2.imwrite(path_out_shear, cropped)
+    return cropped
+
+def cv_process_show(image):
+    cv2.imshow("src", image)
+
+    contrast_brightness_image = contrast_brightness_image(image, 1.2, 10)
+    cv2.imshow("contrast_brightness_image", contrast_brightness_image)
+    
+    gasuss_noise_image = gasuss_noise(image, mean=0, var=0.001)
+    cv2.imshow("gasuss_noise_image", gasuss_noise_image)
+    
+    mirror_image = mirror(image)
+    cv2.imshow("mirror_image", mirror_image)
+
+    resize_image = resize(image)
+    cv2.imshow("resize_image", resize_image)
+
+    rotate_image = rotate(image)
+    cv2.imshow("rotate_image", rotate_image)
+
+    shear_image = shear(image)
+    cv2.imshow("shear_image", shear_image)
+ 
+    #1.图像锐化
+    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], np.float32) #定义一个核
+    #采用核边缘锐化，增强目标物体的边缘及色彩特征信息
+    dst = cv2.filter2D(image, -1, kernel=kernel) 
+    #2.图像翻转
+    processed_img = cv2.flip(dst, 0)
+    cv2.imshow("img_filter2D", processed_img)
+
+def batch_preocess(dataset_dir, class_list):
+    if os.path.isdir(dataset_dir):
+        #进入数据集路径下
+        os.chdir(dataset_dir)  
+        #依次遍历4类的文件夹
+        for class_name in class_list:
+            class_dir_path = dataset_dir + "//" + class_name
+            print(class_dir_path)
+            img_files_path = os.listdir(class_dir_path)
+            print(img_files_path)
+            #进入对应的文件夹
+            os.chdir(class_dir_path)
+            print(len(img_files_path))
+            #依次遍历每个类的文件夹中的图片
+            i = 1
+            for img_path in img_files_path:
+                process_img = cv2.imread(class_dir_path + "//" +img_path)
+                print(class_dir_path + "//" +img_path)
+                #数据增强子函数            
+                img_process(process_img, class_name, len(img_files_path) + i, class_dir_path, i)
+                i += 1
+
+            print(class_name + "processes done!")
+        print("ALL done!")
+                
+    else:
+        print("the dataset path is incorrect!")
 
 
 if __name__ == '__main__':
-    
-    image_path = './test_pic/images_orginal/plastic/'
-    image_out_path = './test_picimages_orginal/plastic/'
-    
-    if not os.path.exists(image_out_path):
-        os.mkdir(image_out_path)
-    list = os.listdir(image_path)
-    print(list)
-    print("----------------------------------------")
-    print("The original data path:" + image_path)
-    print("The original data set size:" + str(len(list)))
-    print("----------------------------------------")
-
+    dataset_dir = "G://Python//class//ml2020//class_dataset//dataset//images_processed"
     class_list = ["glass", "metal", "paper", "plastic"]
-    for i in range(0, len(list)):
-        
-        for j in range(0, len(imageNameList)):
-            path_out = os.path.join(
-                image_out_path, out_image_name + imageNameList[j])
-            image = cv2.imread(path)
-            if j == 0:
-                contrast_brightness_image(image, 1.2, 10, path_out)
-            elif j == 1:
-                gasuss_noise(image, path_out)
-            elif j == 2:
-                mirror(image, path_out)
-            elif j == 3:
-                resize(image, path_out)
-            elif j == 4:
-                rotate(image, path_out)
-            elif j == 5:
-                shear(image, path_out)
-            else:
-                shutil.copy(path, path_out)
-        print(out_image_name + "success！", end='\t')
-    print("----------------------------------------")
-    print("The data augmention path:" + image_out_path)
-    outlist = os.listdir(image_out_path)
-    print("The data augmention sizes:" + str(len(outlist)))
-    print("----------------------------------------")
-    print("Rich sample for:" + str(len(outlist) - len(list)))
-
+    img_dir = r"G:\Python\class\ml2020\PaddlePaddle\test_pic\metal1.jpg"
+    image = cv2.imread(img_dir)
+    # 单张照片处理效果展示
+    cv_process_show(image)
+    # 批量处理
+    # batch_preocess(dataset_dir, class_list)
