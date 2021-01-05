@@ -12,6 +12,8 @@ Blog link: https://blog.csdn.net/qq_45779334/article/details/112135203
 
 ## 2.run ur Model to infer on ur Windows
 
+Blog link: https://blog.csdn.net/qq_45779334/article/details/112155819
+
 ### (1).Setup up ur env
 #### Windows:
   pip install paddlelite
