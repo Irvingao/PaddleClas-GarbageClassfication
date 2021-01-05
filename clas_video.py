@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # 初始化
     predictor = create_predictor(model_dir)
     
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     while True:
         ret, frame = cap.read()
         # 预测
