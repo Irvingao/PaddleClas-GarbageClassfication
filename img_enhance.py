@@ -62,14 +62,12 @@ def gasuss_noise(image, mean=0, var=0.001):
     out = np.uint8(out * 255)
     return out
 
-
 def mirror(image):
     '''
         水平镜像
     '''
     h_flip = cv2.flip(image, 1)
     return h_flip
-
 
 def resize(image):
     '''
@@ -79,7 +77,6 @@ def resize(image):
     large = cv2.resize(image, (2 * width, 2 * height))
     return large
 
-
 def rotate(image):
     '''
         旋转
@@ -88,7 +85,6 @@ def rotate(image):
     M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 10, 1)
     dst = cv2.warpAffine(image, M, (cols, rows))
     return dst
-
 
 def shear(image):
     '''
@@ -154,7 +150,6 @@ def batch_preocess(dataset_dir, class_list):
                 
     else:
         print("the dataset path is incorrect!")
-
 
 if __name__ == '__main__':
     dataset_dir = "G://Python//class//ml2020//class_dataset//dataset//images_processed"
